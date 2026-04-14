@@ -49,7 +49,7 @@ El análisis se realizó íntegramente en **R**, aplicando las siguientes técni
 
 ## 🚀 Cómo visualizar este proyecto
 Puedes consultar el informe completo en formato interactivo aquí:
-👉 **[Enlace a tu reporte HTML/PDF]** *(Cambiá esto por tu link)*
+👉 [[**[Enlace a tu reporte HTML/PDF]** *(Cambiá esto por tu link)*](https://github.com/nadinadiaz/Data-Analytics-Siniestralidad-y-Salud-Mental-en-Argentina/blob/628c1ddb1479558568d082cd845e2a8818244c50/An%C3%A1lisis%20de%20datos%20%20Siniestralidad%20Laboral%2C%20bienestar%20psicol%C3%B3gico%20y%20entorno%20econ%C3%B3mico%20.pdf)]
 
 ---
 
