@@ -49,7 +49,7 @@ El análisis se realizó íntegramente en **R**, aplicando las siguientes técni
 
 ## 🚀 Cómo visualizar este proyecto
 Puedes consultar el informe completo en formato interactivo aquí:
-👉 [(https://nadinadiaz-github-io.vercel.app/docs/SiniestralidadLaboral.pdf)]
+👉 [[Ver Presentación Ejecutiva (PDF)](https://nadinadiaz-github-io.vercel.app/docs/SiniestralidadLaboral.pdf)
 ---
 
 ## 👤 Autor
