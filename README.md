@@ -53,7 +53,6 @@ Puedes consultar el informe completo en formato interactivo aquí:
 ---
 
 ## 👤 Autor
-**Nadina Díaz** *Bioingeniera & Data Analyst* [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=flat&logo=linkedin&logoColor=white)](TU_LINK_DE_LINKEDIN)  
-[![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat&logo=github&logoColor=white)](https://github.com/nadinadiaz.github.io)
+**Nadina Díaz** *Bioingeniera & Data Analyst* [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=flat&logo=linkedin&logoColor=white)](www.linkedin.com/in/nadina-diaz-9ab5aa364)  
 
 Data Analyst
