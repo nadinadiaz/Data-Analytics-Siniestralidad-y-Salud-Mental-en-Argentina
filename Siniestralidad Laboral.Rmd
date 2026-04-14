@@ -1,0 +1,625 @@
+---
+title: "Análisis de Datos en Salud Mental, Estrés Económico y Siniestralidad Laboral"
+subtitle: "Explorando la intersección entre bienestar psicosocial y seguridad operativa"
+author: "Nadina Díaz"
+
+date: "`r format(Sys.Date(), '%d %B %Y')`"
+
+
+output:
+  html_document:
+    theme: journal
+    highlight: tango
+    code_folding: hide
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = "center"
+)
+```
+
+## 1. Marco del Estudio
+
+Se analiza la relación dinámica entre el **bienestar psicológico**, el **contexto económico** y la **siniestralidad laboral** registrada en Argentina **(2010–2024)**.
+Este estudio exploratorio busca identificar patrones y cambios estructurales en el tiempo, integrando variables que afectan la salud física y mental de los trabajadores bajo una perspectiva de salud ocupacional.
+
+
+## 2. Objetivos
+
+### 2.1 Objetivo general:
+
+* Cuantificar la incidencia de factores psicosociales y variables económicas en la dinámica de la siniestralidad laboral registrada en Argentina (2010–2024)
+
+### 2.2 Objetivos específicos:
+
+* Establecer correlaciones estadísticas entre los niveles de malestar psicológico y la frecuencia de accidentes laborales, segmentando por género y rango etario.
+
+* Determinar el impacto del estrés económico (inflación y pérdida de poder adquisitivo) sobre la seguridad operativa y el reporte de siniestros.
+
+* Identificar quiebres de tendencia (breakpoints) en el comportamiento histórico de la serie, con especial énfasis en el período post-pandemia.
+
+## 3. Hipótesis de Trabajo
+
+Se plantean las siguientes hipótesis exploratorias:
+
+* **Contexto Emocional:** A mayor malestar psicológico, se espera una mayor siniestralidad laboral.
+* **Contexto Económico:** El aumento del estrés económico se asocia con mayores niveles de siniestralidad laboral.
+* **Quiebre Estructural en Pandemia:** La pandemia de 2020 generó un cambio en la tendencia de la siniestralidad laboral.
+* **Diferencias por Estratos:** La relación entre malestar psicológico y siniestralidad puede variar según características demográficas.
+
+## 4. Fuentes de Datos Utilizadas
+
+**Origen de los datos**
+
+* **Superintendencia de Riesgos del Trabajo (SRT):** Series históricas de siniestralidad laboral .
+* **Observatorio de la Deuda Social Argentina (UCA):** indicadores de malestar psicológico y estrés económico.
+* **INDEC:** variables macroeconómicas.
+
+**Variables principales analizadas**
+
+* Siniestralidad laboral
+* Malestar psicológico
+* Estrés económico
+* Inflación
+
+**Limitaciones del dataset**
+
+Los datos de siniestralidad laboral incluyen únicamente trabajadores cubiertos por ART, excluyendo aproximadamente un 40% de la población laboral sin cobertura.
+
+Los indicadores de malestar psicológico provienen de la encuesta de la UCA, basada en una muestra de ~5.750 hogares en áreas metropolitanas, lo que puede limitar su representatividad a nivel nacional.
+
+## 5. Metodología y Procesamiento de Datos
+
+Con el fin de estandarizar métricas de distinta naturaleza y asegurar la robustez estadística del modelo, se implementaron técnicas de normalización, limpieza de anomalías (outliers) y segmentación por períodos
+
+1. **Normalización (Z-Scores):** estandarización de variables para facilitar la comparación entre indicadores.
+
+2. **Tratamiento de Anomalías (Outliers):** el año 2020 fue analizado como caso atípico debido al impacto de la pandemia.
+
+3. **Segmentación Temporal:** en algunos análisis se dividió el período en pre-pandemia (2010–2019) y post-pandemia (2021–2024).
+
+* **Herramientas:** procesamiento y visualización realizados en R (tidyverse y ggplot2).
+
+## 6. Definición  de Indicadores.
+
+| Indicador | Descripción |
+| :--- | :--- |
+| **Tasa de Siniestralidad** | Eventos notificados cada 1.000 trabajadores cubiertos. |
+| **Incidencia Global** | Casos con baja laboral o secuela cada 1.000 cubiertos. |
+| **Malestar Psicológico** | Presencia de síntomas de ansiedad/depresión (Encuesta UCA). |
+| **Estrés Económico** | Insuficiencia de ingresos percibida e incapacidad de ahorro. |
+| **Inflación** | Aumento sostenido y generalizado de precios (IPC). |
+
+## 7.Preparación de los Datos (Setting up)
+### 7.1.Configuración del entorno
+
+```{r}
+library(tidyverse)   # Limpieza y manipulación (dplyr, ggplot2, tidyr)  
+library(lubridate)
+library(knitr)
+library(kableExtra)
+library(readxl)
+library(ggrepel)
+
+```
+
+### 7.2 Carga de Datasets
+
+```{r,  class.source="fold-show"}
+
+df_salud_laboral <- read_excel("./data/Libro1.xlsx") #  Carga de dataset siniestralidad, malestar psicológico y datos económicos
+
+```
+<details>
+
+  <summary>🔍Clic aquí para ver el resultado</summary>
+```{r}
+df_salud_laboral %>%
+  head(5) %>%
+  kable(caption = "Primeros registros del dataset principal") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+```
+</details>
+  
+```{r,  class.source="fold-show"}
+
+tabla_sexo <- read_excel("./data/Libro2.xlsx") #Datos Estratificados por sexo
+
+```
+  
+<details>
+
+  <summary>🔍Clic aquí para ver el resultado</summary>
+```{r}
+head(tabla_sexo)%>%
+  head(5) %>%
+  kable(caption = "Primeros registros del dataset principal") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+```
+</details>  
+
+```{r class.source="fold-show"}
+
+df_edad <- read_excel("./data/Libro3.xlsx") #Datos Estratificados por edad
+
+```
+
+<details>
+
+  <summary>🔍Clic aquí para ver el resultado</summary>
+```{r}
+head(df_edad)%>%
+  head(5) %>%
+  kable(caption = "Primeros registros del dataset principal") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+```
+</details>
+
+## 8. Análisis Exploratorio
+
+### 8.1 Relación entre Malestar psicológico y siniestralidad laboral
+
+Prepararamos la tabla de análisis y calculamos la correlación entre variables
+
+```{r, class.source="fold-show"}
+
+# Preparación de Tabla de Trabajo
+
+df_analisis <- df_salud_laboral %>%
+  mutate(
+    tasa_siniestralidad = (Accidentabilidad_Laboral / Trab_Activos) * 1000,
+  )
+
+# Calculo de Correlación
+
+cor_malestar <- cor(df_analisis$Malestar_Total, df_analisis$tasa_siniestralidad)
+cor_malestar
+```
+
+Graficamos las tendencias de malestar psicológico y tasa de siniestralidad laboral a lo largo de los años
+
+```{r}
+# Definimos colores
+
+colores_voro <- c("siniestralidad_z" = "#27F5DA", "malestar_z" = "#F59393")
+
+# --- GRÁFICA 1: ESCENARIO TOTAL (CON 2020) ---
+
+df_con_2020 <- df_analisis %>%
+  select(Anio, Malestar_Total, tasa_siniestralidad) %>%
+  mutate(
+    malestar_z = (Malestar_Total - mean(Malestar_Total)) / sd(Malestar_Total),   # Normalización Z
+    siniestralidad_z = (tasa_siniestralidad - mean(tasa_siniestralidad)) / sd(tasa_siniestralidad)  #Normalización Z
+  ) %>%
+  pivot_longer(cols = c(malestar_z, siniestralidad_z), names_to = "Variable", values_to = "Valor")
+
+plot_con_2020 <- ggplot(df_con_2020, aes(x = Anio, y = Valor, color = Variable)) +
+  geom_line(size = 1.2, alpha = 0.8) +
+  geom_point(size = 3) +
+  geom_vline(xintercept = 2020, linetype = "dashed", color = "gray40") +
+  annotate("text", x = 2020.2, y = -1.0, label = "Outlier Pandemia", 
+           angle = 90, vjust = -0.5, color = "gray40", size = 3.5) +
+  scale_x_continuous(breaks = 2010:2024) +
+  scale_color_manual(values = colores_voro, 
+                     labels = c("Malestar Psicológico", "Siniestralidad Laboral")) +
+  theme_minimal() +
+  labs(title = "Tendencias Históricas: Impacto de la Pandemia",
+       subtitle = "El año 2020 introduce una anomalía que distorsiona la media de la serie",
+       caption = "Fuente: Elaboración propia en base a datos de SRT y ODSA-UCA",
+       y = "Desviación Estándar (Z-Score)", x = "Año", color = "Indicador") +
+  theme(
+    legend.position = "bottom",
+    
+    # TÍTULO EXTRA GRANDE
+    plot.title = element_text(size = 20, face = "bold", hjust = 0),
+    
+    # SUBTÍTULO MEDIANO
+    plot.subtitle = element_text(size = 14, color = "gray40", hjust = 0),
+    
+    # EJES GRANDES
+    axis.title = element_text(size = 16, face = "bold"),
+    axis.text = element_text(size = 10),
+    
+    # LEYENDA GRANDE
+    legend.title = element_text(size = 14, face = "bold"),
+    legend.text = element_text(size = 12),
+    
+    # CAPTION
+    plot.caption = element_text(size = 11, color = "gray50", hjust = 1)
+  )
+plot_con_2020
+```
+
+La **pandemia** introduce un cambio en la dinámica: disminuyen los accidentes mientras aumenta el malestar. Este desacople puede estar asociado a cambios en la modalidad de trabajo (teletrabajo), que redujeron la exposición a riesgos físicos sin mejorar el bienestar psicológico.
+
+Si eliminamos el año 2020 por ser un  outlier estructural:
+
+```{r}
+# --- GRÁFICA 2: ESCENARIO FILTRADO (SIN 2020) ---
+df_sin_2020 <- df_analisis %>%
+  filter(Anio != 2020) %>%
+  select(Anio, Malestar_Total, tasa_siniestralidad) %>%
+  mutate(
+    malestar_z = (Malestar_Total - mean(Malestar_Total)) / sd(Malestar_Total), #Normalización Z
+    siniestralidad_z = (tasa_siniestralidad - mean(tasa_siniestralidad)) / sd(tasa_siniestralidad) #Normalización Z
+  ) %>%
+  pivot_longer(cols = c(malestar_z, siniestralidad_z), names_to = "Variable", values_to = "Valor")
+
+plot_sin_2020 <- ggplot(df_sin_2020, aes(x = Anio, y = Valor, color = Variable)) +
+  geom_line(size = 1.2) +
+  geom_point(size = 3) +
+  # Dejamos el hueco en 2020 para honestidad visual
+  scale_x_continuous(breaks = 2010:2024) +
+  scale_color_manual(values = colores_voro, 
+                     labels = c("Malestar Psicológico", "Siniestralidad Laboral")) +
+  theme_minimal() +
+  labs(title = "Tendencias Normalizadas: Ajuste Metodológico",
+       subtitle = "Exclusión del outlier 2020 para el análisis de correlación causal",
+       caption = "Fuente: Elaboración propia en base a datos de SRT y ODSA-UCA",
+       y = "Desviación Estándar (Z-Score)", x = "Año", color = "Indicador") +
+  theme(
+    legend.position = "bottom",
+    
+    # TÍTULO EXTRA GRANDE
+    plot.title = element_text(size = 20, face = "bold", hjust = 0),
+    
+    # SUBTÍTULO MEDIANO
+    plot.subtitle = element_text(size = 14, color = "gray40", hjust = 0),
+    
+    # EJES GRANDES
+    axis.title = element_text(size = 16, face = "bold"),
+    axis.text = element_text(size = 10),
+    
+    # LEYENDA GRANDE
+    legend.title = element_text(size = 14, face = "bold"),
+    legend.text = element_text(size = 12),
+    
+    # CAPTION
+    plot.caption = element_text(size = 11, color = "gray50", hjust = 1)
+  )
+# Visualizar
+print(plot_sin_2020)
+```
+
+Calulamos las correlaciones pre y post pandemia
+
+```{r}
+## Correlaciones
+# Pre pandemia
+
+cor_prepan <- cor(df_analisis %>% filter(Anio <= 2019) %>% pull(Malestar_Total),
+                  df_analisis %>% filter(Anio <= 2019) %>% pull(tasa_siniestralidad),
+                  use = "complete.obs")
+cor_prepan
+
+# Post pandemia
+cor_postpan <- cor(df_analisis %>% filter(Anio >= 2021) %>% pull(Malestar_Total),
+                   df_analisis %>% filter(Anio >= 2021) %>% pull(tasa_siniestralidad),
+                   use = "complete.obs")
+cor_postpan
+```
+
+```{r}
+ggplot(df_analisis, aes(x = Malestar_Total, y = tasa_siniestralidad, color = Anio >= 2021)) +
+  
+  # Puntos con transparencia (alpha)
+  geom_point(size = 4, alpha = 0.7) +
+  
+  # Líneas de tendencia un poco más gruesas
+  
+  geom_smooth(method = "lm", se = FALSE, size = 1.2) +
+  
+  # ANOTACIONES DE CORRELACIÓN
+
+  annotate("label", x = 19, y = 78, 
+           label = paste0("Corr. Pre: ", round(cor_prepan, 2)), 
+           color = "#1DA190", fontface = "bold", fill = "white", label.size = 0.5) +
+  annotate("label", x = 27, y = 45, 
+           label = paste0("Corr. Post: ", round(cor_postpan, 2)), 
+           color = "#D46A6A", fontface = "bold", fill = "white", label.size = 0.5) +
+  
+  # Colores 
+  scale_color_manual(values = c("FALSE" = "#27F5DA", "TRUE" = "#F59393"), 
+                     labels = c("Pre-Pandemia (2010-2019)", "Post-Pandemia (2021-2024)")) +
+  
+  # Etiquetas claras
+  labs(title = "El Quiebre Estructural de la Siniestralidad",
+       subtitle = "De una relación inexistente a una correlación positiva tras la crisis sanitaria",
+       x = "Malestar Psicológico (%)", 
+       y = "Tasa de Siniestralidad (por cada 1000 trab.)",
+       color = "Periodo Histórico",
+       caption = "Fuente: Elaboración propia en base a datos de SRT y ODSA-UCA") +
+  
+  # MEJORAS DE TEMA
+  theme_minimal(base_size = 13) +
+  theme(
+    plot.title = element_text(face = "bold", size = 20),
+    plot.subtitle = element_text(color = "gray30", size=14),
+    legend.position = "bottom", 
+    legend.background = element_rect(fill = "gray98", color = NA),
+    panel.grid.minor = element_blank(), # Limpiamos ruido visual,
+    axis.title = element_text(size = 16, face = "bold"),
+    axis.text = element_text(size = 12),
+    
+    legend.title = element_text(size = 10, face = "bold"),
+    legend.text = element_text(size = 8),
+    
+    plot.caption = element_text(size = 11, color = "gray50", hjust = 1)
+  )
+```
+
+**Evidencia de Inestabilidad Temporal**
+
+* **2010–2019:** Correlación nula (-0.13), indicando independencia entre las variables.
+
+* **2021–2024:** Correlación positiva moderada (0.42). Los niveles elevados de malestar psicológico comienzan a asociarse con mayores tasas de siniestralidad.
+
+**Conclusión:** Las transformaciones económicas y laborales recientes sugieren que el malestar psicológico ha ganado relevancia como factor de riesgo laboral.
+ 
+### 8.2 El ciclo económico y la exposición al riesgo
+
+**Desconexión entre Inflación y Siniestralidad**
+
+* **Ausencia de Predictor Directo:** Si bien existen periodos de coincidencia, no se observa una relación consistente a largo plazo. El aumento crítico de la inflación en los últimos años no se ha traducido en un incremento de la siniestralidad.
+
+
+* **Factores Determinantes:** La siniestralidad laboral parece responder más a factores estructurales y de exposición al riesgo que a variables macroeconómicas de corto plazo.
+ 
+```{r}
+# --- GRÁFICA: ESCENARIO TOTAL ECONÓMICOS (CON 2020) ---
+
+# Definimos una paleta de 3 colores para esta sección
+colores_econ <- c("siniestralidad_z" = "#27F5DA", 
+                  "inflacion_z" = "#3A86FF", 
+                  "estres_econ_z" = "#FF006E")
+
+df_econ_2020 <- df_analisis %>%
+  
+  # Normalización de variables
+  select(Anio, Estress_Econ, tasa_siniestralidad, Inflacion) %>% 
+  mutate(
+    siniestralidad_z = (tasa_siniestralidad - mean(tasa_siniestralidad)) / sd(tasa_siniestralidad),
+    inflacion_z = (Inflacion - mean(Inflacion)) / sd(Inflacion),
+    estres_econ_z = (Estress_Econ - mean(Estress_Econ)) / sd(Estress_Econ)
+  ) %>%
+  pivot_longer(cols = c(siniestralidad_z, inflacion_z, estres_econ_z), 
+               names_to = "Variable", 
+               values_to = "Valor")
+
+#Gráfico
+
+ggplot(df_econ_2020, aes(x = Anio, y = Valor, color = Variable)) +
+  geom_line(size = 1.2, alpha = 0.8) +
+  geom_point(size = 3) +
+  geom_vline(xintercept = 2020, linetype = "dashed", color = "gray40") +
+  annotate("text", x = 2020.2, y = -1, label = "Outlier Pandemia", 
+           angle = 90, vjust = -0.5, color = "gray40", size = 3.5) +
+  scale_x_continuous(breaks = 2010:2024) +
+  # ACTUALIZADO: Etiquetas para las 3 variables
+  scale_color_manual(values = colores_econ, 
+                     labels = c("Estrés Económico", "Inflación", "Siniestralidad Laboral")) +
+  theme_minimal() +
+  labs(title = "Impacto Económico y Siniestralidad",
+       subtitle = "Evolución comparativa de variables macroeconómicas y accidentes",
+       caption = "Fuente: Elaboración propia en base a datos de SRT y ODSA-UCA",
+       y = "Desviación Estándar (Z-Score)", 
+       x = "Año", 
+       color = "Indicador") +
+  theme(
+    legend.position = "bottom",
+    
+    # TÍTULO EXTRA GRANDE
+    plot.title = element_text(size = 20, face = "bold", hjust = 0),
+    
+    # SUBTÍTULO MEDIANO
+    plot.subtitle = element_text(size = 14, color = "gray40", hjust = 0),
+    
+    # EJES GRANDES
+    axis.title = element_text(size = 16, face = "bold"),
+    axis.text = element_text(size = 12),
+    
+    # LEYENDA GRANDE
+    legend.title = element_text(size = 14, face = "bold"),
+    legend.text = element_text(size = 12),
+    
+    # CAPTION
+    plot.caption = element_text(size = 11, color = "gray50", hjust = 1)
+  )
+
+```
+
+Si analizamos más a fondo la relación entre la siniestralidad laboral y el estrés económico encontramos una relación inversa
+
+```{r}
+# Calculamos la correlación para la etiqueta
+cor_val <- cor(df_analisis$Estress_Econ, df_analisis$tasa_siniestralidad, use="complete.obs")
+
+ggplot(df_analisis %>% filter(Anio != 2020), aes(x = Estress_Econ, y = tasa_siniestralidad)) +
+  geom_point(aes(color = Anio), size = 4, alpha = 0.8) +
+  # Añadimos la línea de regresión para ver la "dirección" de la relación
+  geom_smooth(method = "lm", color = "#FF006E", fill = "#FF006E", alpha = 0.1) +
+  # Coloreamos los puntos por año para ver la evolución temporal
+  scale_color_viridis_c(option = "plasma") + 
+  annotate("label", x = 45, y = 75, 
+           label = paste0("Correlación: ", round(cor_val, 2)), 
+           fill = "white", fontface = "bold") +
+  theme_minimal() +
+  labs(title = "La Paradoja del Estrés Económico",
+       subtitle = "A mayor estrés percibido, menor siniestralidad registrada (Relación Inversa)",
+       x = "Estrés Económico (%)",
+       y = "Tasa de Siniestralidad",
+       color = "Año") +
+  theme(
+   
+    # TÍTULO EXTRA GRANDE
+    plot.title = element_text(size = 20, face = "bold", hjust = 0),
+    
+    # SUBTÍTULO MEDIANO
+    plot.subtitle = element_text(size = 14, color = "gray40", hjust = 0),
+    
+    # EJES GRANDES
+    axis.title = element_text(size = 16, face = "bold"),
+    axis.text = element_text(size = 12),
+    
+    # LEYENDA GRANDE
+    legend.title = element_text(size = 14, face = "bold"),
+    legend.text = element_text(size = 12),
+  )
+    
+```
+
+**Estrés económico y siniestralidad: relación inversa**
+
+* **Correlación Negativa Fuerte (-0.75):** A medida que aumenta la percepción de insuficiencia de ingresos, la siniestralidad registrada desciende de manera pronunciada.
+
+* **Efecto de la Actividad Económica:** Este fenómeno no indica una mejora en la seguridad, sino que sugiere una reducción en la exposición al riesgo debido a la caída de la actividad económica y el empleo durante las crisis.
+
+* **Subnotificación por Precariedad:** El estrés económico puede actuar como una barrera para la denuncia de siniestros, donde el temor a la inestabilidad laboral prevalece sobre el reporte de accidentes menores.
+
+## 8.3 Diferencias  entre sexos y distintos grupos etarios
+
+Si analizamos las correlaciones entre cantidad de siniestros denunciados y las edades de los trabajadores encontramos una diversidad por rango etario
+
+```{r}
+ # Correlación Grupo 18-34
+  cor_jovenes <- cor(df_edad$Mpsic_18a34, df_edad$CantSin_18a34, use="complete.obs")
+  
+  # Correlación Grupo 35-59
+  cor_adultos <- cor(df_edad$Mpsic_35a59, df_edad$CantSin_35a59, use="complete.obs")
+  
+  # Correlación Grupo 60+
+  cor_mayores <- cor(df_edad$Mpsic_60mas, df_edad$CantSin_60mas, use="complete.obs")
+  
+  # Resultados
+  print(paste("Corr. Jóvenes (18-34):", round(cor_jovenes, 3)))
+  print(paste("Corr. Adultos (35-59):", round(cor_adultos, 3)))
+  print(paste("Corr. Mayores (60+):", round(cor_mayores, 3)))
+  
+ # 1. Creamos el dataframe de etiquetas con posiciones relativas
+  
+  cor_labels <- data.frame(
+    Grupo = c("Jóvenes (18-34 años)", "Adultos (35-59 años)"),
+    x = c(-Inf, -Inf), 
+    y = c(Inf, Inf),
+    label = c(
+      paste0("r = ", round(cor_jovenes, 2)),
+      paste0("r = ", round(cor_adultos, 2))
+    ),
+    # Aquí definimos un ajuste distinto para cada uno si hace falta
+    ajuste_h = c(-0.5, -0.5) # Probá con 1.2 o 1.5 para alejarlos del borde
+  )
+  
+  
+  # Armado de tabla
+  df_jovenes <- df_edad %>%
+    select(Anio, Malestar = Mpsic_18a34, Siniestralidad = CantSin_18a34) %>%
+    mutate(Grupo = "Jóvenes (18-34 años)")
+  
+  df_adultos <- df_edad %>%
+    select(Anio, Malestar = Mpsic_35a59, Siniestralidad = CantSin_35a59) %>%
+    mutate(Grupo = "Adultos (35-59 años)")
+  
+  df_scatter_edad <- bind_rows(df_jovenes, df_adultos)
+  
+  df_scatter_edad <- df_scatter_edad %>%
+    filter(!is.na(Malestar) & !is.na(Siniestralidad))
+  
+  
+  ggplot(df_scatter_edad, aes(x = Malestar, y = Siniestralidad)) +
+    geom_point(aes(color = Anio), size = 4, alpha = 0.7) +
+    geom_smooth(method = "lm", color = "firebrick", se = FALSE, size = 0.8) +
+    
+    # Usamos ggrepel solo para los años
+    
+    geom_text_repel(aes(label = Anio), size = 3, segment.alpha = 0.3) +
+    
+    # 2. Correlación posicionada en la esquina superior izquierda
+    geom_text(
+      data = cor_labels,
+      aes(x = x, y = y, label = label, hjust = ajuste_h),
+      inherit.aes = FALSE,
+      vjust = 2,  
+      size = 6,
+      fontface = "bold",
+      color = "black"
+    ) +
+    
+    scale_color_viridis_c(option = "plasma") +
+    facet_wrap(~Grupo, scales = "free") +
+    theme_minimal() +
+    labs(
+      title = "Divergencia Etaria: Malestar vs Siniestralidad",
+      subtitle = "El malestar psicológico impacta de forma opuesta según el rango etario",
+      x = "Malestar Psicológico (%)",
+      y = "Cantidad de Siniestros (Casos brutos)",
+      color = "Año"
+    ) +
+    theme(
+      strip.text = element_text(face = "bold", size = 12),
+      panel.spacing = unit(2, "lines"),      # Damos más espacio entre los dos cuadros
+      
+      plot.title = element_text(size = 18, face = "bold", hjust = 0),
+      
+      plot.subtitle = element_text(size = 12, color = "gray40", hjust = 0),  # También izquierda
+      
+      axis.title = element_text(size = 10, face = "bold"),
+      axis.text = element_text(size = 10),
+    )
+  
+```
+
+**Divergencia por Rangos Etarios**
+
+* **Adultos (35-59 años):** Correlación positiva moderada (r=0.36),  el incremento del malestar psicológico se asocia  con un aumento en la siniestralidad registrada.
+
+* **Jóvenes (18-34 años):** Fuerte correlación inversa (r=−0.72), sugiriendo una subnotificación crítica por precariedad o rotación laboral.
+
+**Nota Metodológica:** Estos resultados son exploratorios al no estar ajustados por el total de población trabajadora en cada segmento. No se hallaron diferencias significativas al segmentar por sexo, reforzando el peso de los factores económicos.
+ 
+ 
+## 9. Conclusiones
+
+* **Contexto Emocional:** La siniestralidad laboral muestra una tendencia decreciente desde 2011, impulsada por políticas de prevención y programas de reducción de siniestros (Res. 475/2011). No obstante, a partir de 2021, se observa una correlación positiva moderada: el malestar psicológico emerge como un factor de riesgo más relevante en la dinámica de accidentes que en la década anterior.
+* **Contexto Económico:** Las crisis económicas severas generan un efecto de "parálisis por precariedad". La caída de la actividad industrial y el temor a la inestabilidad laboral actúan como barreras para la denuncia de incidentes menores. Asimismo, el aumento del trabajo informal desplaza parte de la siniestralidad fuera de los registros oficiales de la SRT.
+* **Quiebre Estructural en Pandemia:** Tras 2020, se evidencia un desacople crítico. Mientras el malestar psicológico se intensifica, la siniestralidad física desciende. Este fenómeno se atribuye a la adopción masiva del teletrabajo, que redujo la exposición a riesgos mecánicos e in itinere en sectores de servicios y administración.
+* **Diferencias por Estratos:** La ausencia de patrones claros por sexo sugiere que la siniestralidad responde más a factores estructurales que a diferencias demográficas básicas. Sin embargo, la Divergencia Etaria es reveladora:
+
+  * **Adultos (35-59 años):** El malestar actúa como un factor de riesgo tradicional. A mayor estrés percibido, mayor probabilidad de accidentes físicos registrados.
+
+  * **Jóvenes (18-34 años):** Presentan una fuerte correlación inversa. El aumento del malestar coincide con una baja en siniestros, lo que indica alta rotación, exposición a riesgos menos "mecánicos" y una probable sub-notificación por vulnerabilidad laboral.
+
+
+ 
+<div style="background-color: #ffe6e6; padding: 15px; border-radius: 10px; border-left: 6px solid #FF7F50; margin: 20px 0;">
+   <strong>💡 Madurez de los Sistemas de Gestión:</strong>
+   La implementación de protocolos estrictos durante la crisis sanitaria (2020-2021) generó una mejora residual en la cultura preventiva. Esto ha permitido mantener tasas de accidentes bajas, a pesar del deterioro sostenido del entorno macroeconómico y social.
+</div>
+
+## 10.Propuestas y líneas de acción.
+
+Para transformar estos hallazgos en mejoras operativas, se proponen las siguientes intervenciones:
+
+**1. Vigilancia integral de riesgos**
+
+* Integrar salud mental en controles médicos para detección temprana de riesgo.
+
+* Protocolos para teletrabajo, incorporando ergonomía y prevención psicosocial.
+
+**2. Estrategias por Segmento Etario**
+
+* Jóvenes: fortalecer canales de reporte y programas de seguridad conductual para reducir subregistro.
+* Adultos: implementar programas de gestión del estrés y pausas activas.
+
+**3. Adaptación al contexto económico**
+
+* Ajustar estrategias de prevención en contextos de crisis, considerando cambios en la percepción del riesgo y posibles subregistros.
+
+
+
+
